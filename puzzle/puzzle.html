@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incrementing Levels Sliding Puzzle</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0e6d2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* लेवल और स्कोरबोर्ड की स्टाइल */
+        #game-info {
+            font-size: 22px;
+            font-weight: bold;
+            color: #5c4033;
+            margin-bottom: 15px;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #puzzle-container {
+            background-color: #8b5a2b;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            grid-template-rows: repeat(4, 80px);
+            gap: 6px;
+        }
+
+        .tile {
+            background-color: #cdaf95;
+            color: #4a2f13;
+            font-size: 28px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+            transition: background 0.1s;
+        }
+
+        .tile:hover {
+            background-color: #debe9f;
+        }
+
+        /* पहली लाइन (शुरुआती 4 नंबरों) के लिए हरा रंग */
+        .correct-row {
+            background-color: #7ccd7c;
+            color: #104e10;
+        }
+        .correct-row:hover {
+            background-color: #90ee90;
+        }
+
+        .empty {
+            background-color: #5c4033;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        #restart-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #8b5a2b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        #restart-btn:hover {
+            background-color: #a06d3b;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- लेवल डिस्प्ले करने के लिए -->
+    <div id="game-info">लेवल: <span id="level-val">1</span></div>
+    
+    <div id="puzzle-container">
+        <div id="grid"></div>
+    </div>
+    
+    <button id="restart-btn" onclick="resetGame()">गेम रीसेट करें</button>
+
+    <script>
+        const grid = document.getElementById('grid');
+        const levelDisplay = document.getElementById('level-val');
+        
+        let currentLevel = 1; 
+        let winningOrder = [];
+        let currentOrder = [];
+
+        // नया लेवल लोड करने या शुरू करने का फंक्शन
+        function startLevel() {
+            levelDisplay.innerText = currentLevel;
+            
+            // लेवल के हिसाब से नंबर्स तय करना (जैसे लेवल 1 में 1 से 15, लेवल 2 में 2 से 16)
+            let startNum = currentLevel;
+            winningOrder = [];
+            
+            for (let i = 0; i < 15; i++) {
+                winningOrder.push(startNum + i);
+            }
+            winningOrder.push(""); // आखिरी में खाली जगह
+
+            // जीतने वाले क्रम की कॉपी बनाकर उसे शफल करेंगे
+            currentOrder = [...winningOrder];
+            
+            // पक्का करना कि शफल किया हुआ बोर्ड सॉल्वेबल हो
+            do {
+                currentOrder.sort(() => Math.random() - 0.5);
+            } while (!isSolvable(currentOrder) || isAlreadyWon(currentOrder));
+
+            renderGrid();
+        }
+
+        // गेम को पूरी तरह शुरू से रीसेट करने के लिए
+        function resetGame() {
+            currentLevel = 1;
+            startLevel();
+        }
+
+        function canMove(index) {
+            const emptyIndex = currentOrder.indexOf("");
+            const row = Math.floor(index / 4);
+            const col = index % 4;
+            const emptyRow = Math.floor(emptyIndex / 4);
+            const emptyCol = emptyIndex % 4;
+            return (Math.abs(row - emptyRow) + Math.abs(col - emptyCol)) === 1;
+        }
+
+        function moveTile(index) {
+            if (canMove(index)) {
+                const emptyIndex = currentOrder.indexOf("");
+                currentOrder[emptyIndex] = currentOrder[index];
+                currentOrder[index] = "";
+                renderGrid();
+                checkWin();
+            }
+        }
+
+        function renderGrid() {
+            grid.innerHTML = "";
+            let startNum = currentLevel;
+
+            currentOrder.forEach((value, index) => {
+                const tile = document.createElement('div');
+                if (value === "") {
+                    tile.className = "tile empty";
+                } else {
+                    tile.className = "tile";
+                    tile.innerText = value;
+                    
+                    // पहली रो (लाइन) के 4 नंबरों को हरा रखने का लॉजिक
+                    if (value >= startNum && value <= (startNum + 3)) {
+                        tile.classList.add("correct-row");
+                    }
+
+                    tile.onclick = () => moveTile(index);
+                }
+                grid.appendChild(tile);
+            });
+        }
+
+        // चेक करें कि क्या प्लेयर जीत गया
+        function checkWin() {
+            const isWon = currentOrder.every((val, index) => val === winningOrder[index]);
+            if (isWon) {
+                setTimeout(() => {
+                    alert(`बधाई हो! आपने लेवल ${currentLevel} पूरा कर लिया है! 🎉 अब अगला लेवल शुरू होगा।`);
+                    currentLevel++; // लेवल और नंबर्स को इन्क्रीमेंट करें
+                    startLevel();   // अगला लेवल लोड करें
+                }, 200);
+            }
+        }
+
+        // यह चेक करने के लिए कि शफल होने पर गेम गलती से पहले से ही सॉल्व्ड न आ जाए
+        function isAlreadyWon(puzzle) {
+            return puzzle.every((val, index) => val === winningOrder[index]);
+        }
+
+        // गेम सॉल्व करने योग्य है या नहीं, यह जांचने का मैथ लॉजिक
+        function isSolvable(puzzle) {
+            let inversions = 0;
+            const arr = puzzle.filter(x => x !== "");
+            for (let i = 0; i < arr.length - 1; i++) {
+                for (let j = i + 1; j < arr.length; j++) {
+                    if (arr[i] > arr[j]) inversions++;
+                }
+            }
+            const emptyIndex = puzzle.indexOf("");
+            const emptyRowFromBottom = 4 - Math.floor(emptyIndex / 4);
+            if (emptyRowFromBottom % 2 === 0) {
+                return inversions % 2 !== 0;
+            } else {
+                return inversions % 2 === 0;
+            }
+        }
+
+        // गेम शुरू करें
+        startLevel();
+    </script>
+</body>
+</html>
