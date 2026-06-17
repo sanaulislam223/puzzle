@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Friendly Sliding Puzzle</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0e6d2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            /* मोबाइल पर डबल टैप ज़ूम रोकने के लिए */
+            touch-action: manipulation; 
+        }
+
+        #game-info {
+            font-size: 20px;
+            font-weight: bold;
+            color: #5c4033;
+            margin-bottom: 15px;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #puzzle-container {
+            background-color: #8b5a2b;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            width: 90vw; /* मोबाइल स्क्रीन की चौड़ाई के हिसाब से */
+            max-width: 340px; /* कंप्यूटर पर बहुत बड़ा न दिखे */
+            aspect-ratio: 1 / 1; /* चौड़ाई और ऊँचाई को बराबर रखने के लिए */
+            box-sizing: border-box;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* बराबर 4 कॉलम */
+            grid-template-rows: repeat(4, 1fr); /* बराबर 4 रो */
+            gap: 6px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .tile {
+            background-color: #cdaf95;
+            color: #4a2f13;
+            font-size: 6vw; /* मोबाइल स्क्रीन के हिसाब से फॉन्ट साइज़ */
+            max-font-size: 28px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+            transition: background 0.1s;
+        }
+
+        /* कंप्यूटर स्क्रीन्स के लिए फॉन्ट एडजस्टमेंट */
+        @media (min-width: 400px) {
+            .tile {
+                font-size: 24px;
+            }
+        }
+
+        .tile:hover {
+            background-color: #debe9f;
+        }
+
+        .correct-row {
+            background-color: #7ccd7c;
+            color: #104e10;
+        }
+        .correct-row:hover {
+            background-color: #90ee90;
+        }
+
+        .empty {
+            background-color: #5c4033;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        #restart-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #8b5a2b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        #restart-btn:hover {
+            background-color: #a06d3b;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-info">लेवल: <span id="level-val">1</span></div>
+    
+    <div id="puzzle-container">
+        <div id="grid"></div>
+    </div>
+    
+    <button id="restart-btn" onclick="resetGame()">गेम रीसेट करें</button>
+
+    <script>
+        const grid = document.getElementById('grid');
+        const levelDisplay = document.getElementById('level-val');
+        
+        let currentLevel = 1; 
+        let winningOrder = [];
+        let currentOrder = [];
+
+        function startLevel() {
+            levelDisplay.innerText = currentLevel;
+            let startNum = currentLevel;
+            winningOrder = [];
+            
+            for (let i = 0; i < 15; i++) {
+                winningOrder.push(startNum + i);
+            }
+            winningOrder.push("");
+
+            currentOrder = [...winningOrder];
+            
+            do {
+                currentOrder.sort(() => Math.random() - 0.5);
+            } while (!isSolvable(currentOrder) || isAlreadyWon(currentOrder));
+
+            renderGrid();
+        }
+
+        function resetGame() {
+            currentLevel = 1;
+            startLevel();
+        }
+
+        function canMove(index) {
+            const emptyIndex = currentOrder.indexOf("");
+            const row = Math.floor(index / 4);
+            const col = index % 4;
+            const emptyRow = Math.floor(emptyIndex / 4);
+            const emptyCol = emptyIndex % 4;
+            return (Math.abs(row - emptyRow) + Math.abs(col - emptyCol)) === 1;
+        }
+
+        function moveTile(index) {
+            if (canMove(index)) {
+                const emptyIndex = currentOrder.indexOf("");
+                currentOrder[emptyIndex] = currentOrder[index];
+                currentOrder[index] = "";
+                renderGrid();
+                checkWin();
+            }
+        }
+
+        function renderGrid() {
+            grid.innerHTML = "";
+            let startNum = currentLevel;
+
+            currentOrder.forEach((value, index) => {
+                const tile = document.createElement('div');
+                if (value === "") {
+                    tile.className = "tile empty";
+                } else {
+                    tile.className = "tile";
+                    tile.innerText = value;
+                    
+                    if (value >= startNum && value <= (startNum + 3)) {
+                        tile.classList.add("correct-row");
+                    }
+
+                    // मोबाइल टच और क्लिक दोनों पर काम करेगा
+                    tile.onclick = () => moveTile(index);
+                }
+                grid.appendChild(tile);
+            });
+        }
+
+        function checkWin() {
+            const isWon = currentOrder.every((val, index) => val === winningOrder[index]);
+            if (isWon) {
+                setTimeout(() => {
+                    alert(`बधाई हो! आपने लेवल ${currentLevel} पूरा कर लिया है! 🎉`);
+                    currentLevel++;
+                    startLevel();
+                }, 200);
+            }
+        }
+
+        function isAlreadyWon(puzzle) {
+            return puzzle.every((val, index) => val === winningOrder[index]);
+        }
+
+        function isSolvable(puzzle) {
+            let inversions = 0;
+            const arr = puzzle.filter(x => x !== "");
+            for (let i = 0; i < arr.length - 1; i++) {
+                for (let j = i + 1; j < arr.length; j++) {
+                    if (arr[i] > arr[j]) inversions++;
+                }
+            }
+            const emptyIndex = puzzle.indexOf("");
+            const emptyRowFromBottom = 4 - Math.floor(emptyIndex / 4);
+            if (emptyRowFromBottom % 2 === 0) {
+                return inversions % 2 !== 0;
+            } else {
+                return inversions % 2 === 0;
+            }
+        }
+
+        startLevel();
+    </script>
+</body>
+</html>
