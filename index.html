@@ -133,14 +133,24 @@
 </head>
 <body>
 
-    <div id="game-info">Lavel: <span id="level-val">1</span> (<span id="grid-desc">2x2</span>)</div>
+        <div id="game-info">
+        <div>Level: <span id="level-val">1</span> (<span id="grid-desc">2x2</span>)</div>
+        <div id="score-box" style="font-size: 15px; color: #4b5563; display: flex; flex-direction: column; align-items: center;">
+            <div>Moves: <span id="moves-val">0</span></div>
+            <div style="margin-top: 4px; color: #b45309; font-weight: bold;">
+                Best: <span id="best-val">-</span> <span id="best-name-box" style="font-size: 13px; color: #4b5563; font-weight: normal;"></span>
+            </div>
+        </div>
+    </div>
+
     
     <div id="puzzle-container">
         <div id="grid"></div>
     </div>
     
     <button id="restart-btn" onclick="resetGame()">RESET GAME</button>
-<p style="color:gray;margin-top:10px">SANAUL ISLAM</p>
+	<p style="color:gray;margin-top:10px">SANAUL ISLAM</p>
+
     <script>
         const gridElement = document.getElementById('grid');
         const levelDisplay = document.getElementById('level-val');
@@ -152,11 +162,28 @@
         let winningOrder = [];
         let currentOrder = [];
 
+let moves = 0;
+const movesDisplay = document.getElementById('moves-val');
+const bestDisplay = document.getElementById('best-val');
+const bestNameDisplay = document.getElementById('best-name-box');
+
+
         const numberWords = {
             1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
             6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
             11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen"
         };
+            moves = 0;
+            if(movesDisplay) movesDisplay.innerText = moves;
+            let savedBest = localStorage.getItem(`best_level_${currentLevel}`);
+            let savedName = localStorage.getItem(`best_name_level_${currentLevel}`);
+            if (savedBest) {
+                if(bestDisplay) bestDisplay.innerText = savedBest;
+                if(bestNameDisplay) bestNameDisplay.innerText = savedName ? `by ${savedName}` : "";
+            } else {
+                if(bestDisplay) bestDisplay.innerText = "-";
+                if(bestNameDisplay) bestNameDisplay.innerText = "";
+            }
 
         let startX = 0;
         let startY = 0;
@@ -249,7 +276,10 @@
                         if (currentOrder[neighbor.idx] === "") {
                             currentOrder[neighbor.idx] = currentOrder[index];
                             currentOrder[index] = "";
-                            renderGrid();
+                            moves++;
+							if(movesDisplay) movesDisplay.innerText = moves;
+
+							renderGrid();
                             checkWin();
                             return true;
                         }
@@ -340,7 +370,10 @@
             if (targetIdx !== -1 && currentOrder[targetIdx] === "") {
                 currentOrder[targetIdx] = currentOrder[index];
                 currentOrder[index] = "";
-                renderGrid();
+                moves++;
+                if(movesDisplay) movesDisplay.innerText = moves;
+
+				renderGrid();
                 checkWin();
             }
         }
@@ -348,6 +381,18 @@
 
         function renderGrid() {
             gridElement.innerHTML = "";
+			
+			            // स्क्रीन पर पुराना सेव किया हुआ नाम और बेस्ट स्कोर रेंडर करना
+            let savedBest = localStorage.getItem(`best_level_${currentLevel}`);
+            let savedName = localStorage.getItem(`best_name_level_${currentLevel}`);
+            if (savedBest) {
+                if(bestDisplay) bestDisplay.innerText = savedBest;
+                if(bestNameDisplay) bestNameDisplay.innerText = savedName ? `by ${savedName}` : "";
+            } else {
+                if(bestDisplay) bestDisplay.innerText = "-";
+                if(bestNameDisplay) bestNameDisplay.innerText = "";
+            }
+
 
             currentOrder.forEach((value, index) => {
                 const tile = document.createElement('div');
@@ -408,12 +453,37 @@
         function checkWin() {
             if (isAlreadyWon()) {
                 setTimeout(() => {
-                    alert(`शानदार! लेवल ${currentLevel} क्लियर हुआ। अब अगला कठिन स्टेप शुरू होगा! 🎉`);
+                    let savedBest = localStorage.getItem(`best_level_${currentLevel}`);
+                    
+                    // अगर पहली बार जीते हैं या मौजूदा मूव्स पुराने बेस्ट स्कोर से कम हैं
+                    if (!savedBest || moves < parseInt(savedBest)) {
+                        
+                        // प्लेयर से उसका नाम पूछने के लिए पॉप-अप बॉक्स (Prompt)
+                        let playerName = prompt(`🎉 बधाई हो! आपने लेवल ${currentLevel} में नया रिकॉर्ड बनाया है!\nअपना नाम यहाँ दर्ज करें:`, "Player");
+                        
+                        // अगर प्लेयर नाम खाली छोड़ दे या कैंसिल कर दे
+                        if (!playerName || playerName.trim() === "") {
+                            playerName = "Anonymous";
+                        }
+                        
+                        // लोकल मेमोरी (localStorage) में स्कोर और नाम हमेशा के लिए सेव करना
+                        localStorage.setItem(`best_level_${currentLevel}`, moves);
+                        localStorage.setItem(`best_name_level_${currentLevel}`, playerName.trim());
+						
+						if(bestNameDisplay) bestNameDisplay.innerText = `by ${playerName}`;
+
+                        
+                        alert(`रिकॉर्ड सेव हो गया!\n${playerName}: ${moves} कदम 🏆`);
+                    } else {
+                        alert(`शानदार! आपने ${moves} कदमों में लेवल ${currentLevel} क्लियर किया! 🎉`);
+                    }
+                    
                     currentLevel++;
                     startLevel();
                 }, 200);
             }
         }
+
 
         function isAlreadyWon() {
             return currentOrder.every((val, index) => val === winningOrder[index]);
