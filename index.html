@@ -121,6 +121,15 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
     </style>
+	
+	
+	<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
 </head>
 <body>
 <h2 style="color:red;">SANAUL ISLAM</h2>
@@ -399,7 +408,7 @@
         function checkWin() {
             if (isAlreadyWon()) {
                 setTimeout(() => {
-                    alert(`लेवल ${currentLevel} क्लियर हुआ। अब अगला कठिन स्टेप शुरू होगा!`);
+                    alert(`शानदार! लेवल ${currentLevel} क्लियर हुआ। अब अगला कठिन स्टेप शुरू होगा! 🎉`);
                     currentLevel++;
                     startLevel();
                 }, 200);
