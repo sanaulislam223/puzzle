@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Super Smooth Sliding Puzzle</title>
+    <title>Easy Multi-Empty Sliding Puzzle</title>
     <style>
         body {
             font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -12,11 +12,10 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            height: 100dvh;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             box-sizing: border-box;
-            /* मोबाइल के डिफ़ॉल्ट स्क्रॉल, ज़ूम और बाउंस इफेक्ट को पूरी तरह बंद करने के लिए */
             touch-action: none; 
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -40,10 +39,10 @@
             padding: 15px;
             border-radius: 24px;
             box-shadow: 0 12px 30px rgba(0,0,0,0.06);
-            width: 90vw;
-            max-width: 360px;
-            height: 90vw;
-            max-height: 360px;
+            width: 88vw;
+            max-width: 340px;
+            height: 88vw;
+            max-height: 340px;
             box-sizing: border-box;
             border: 4px solid #f0edf0;
             display: flex;
@@ -74,7 +73,6 @@
             width: 100%;
             height: 100%;
             container-type: inline-size; 
-            /* ब्राउज़र को बताएं कि इस टाइल पर कोई डिफ़ॉल्ट एक्शन नहीं करना है */
             touch-action: none; 
         }
 
@@ -107,6 +105,7 @@
             box-shadow: inset 0 4px 8px rgba(0,0,0,0.04);
             border-radius: 14px;
             cursor: default;
+            border: none;
         }
 
         #restart-btn {
@@ -140,6 +139,7 @@
         
         let currentLevel = 1; 
         let gridSize = 2; 
+        let emptyCount = 1; // खाली बॉक्स की संख्या
         let winningOrder = [];
         let currentOrder = [];
 
@@ -149,26 +149,40 @@
             11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen"
         };
 
-        // पॉइंटर पोजीशन ट्रैक करने के लिए वेरिएबल्स
         let startX = 0;
         let startY = 0;
         let isPointerDown = false;
 
         function startLevel() {
             gridSize = currentLevel + 1; 
+            
+            // आपके नियम के अनुसार खाली बॉक्स सेट करना:
+            // लेवल 1 (2x2) = 1 खाली, लेवल 2 (3x3) = 1 खाली
+            // लेवल 3 (4x4) = 2 खाली, लेवल 4 (5x5) = 3 खाली, इत्यादि...
+            if (currentLevel >= 3) {
+                emptyCount = currentLevel - 1;
+            } else {
+                emptyCount = 1;
+            }
+
             levelDisplay.innerText = currentLevel;
-            gridDesc.innerText = `${gridSize}x${gridSize}`;
+            gridDesc.innerText = `${gridSize}x${gridSize} | ${emptyCount} Empty`;
 
             gridElement.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
             gridElement.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
 
-            let totalTiles = gridSize * gridSize;
-            winningOrder = [];
+            let totalSlots = gridSize * gridSize;
+            let totalNumbers = totalSlots - emptyCount;
             
-            for (let i = 1; i < totalTiles; i++) {
+            winningOrder = [];
+            // पहले नंबर भरें
+            for (let i = 1; i <= totalNumbers; i++) {
                 winningOrder.push(i);
             }
-            winningOrder.push(""); 
+            // फिर जितने चाहिए उतने खाली स्लॉट ("") जोड़ें
+            for (let i = 0; i < emptyCount; i++) {
+                winningOrder.push("");
+            }
 
             currentOrder = [...winningOrder];
             shufflePuzzle();
@@ -178,18 +192,26 @@
         function shufflePuzzle() {
             let shuffles = gridSize * gridSize * 25;
             for (let i = 0; i < shuffles; i++) {
-                const emptyIndex = currentOrder.indexOf("");
-                const validMoves = [];
-                const row = Math.floor(emptyIndex / gridSize);
-                const col = emptyIndex % gridSize;
+                // किसी भी एक रैंडम खाली डिब्बे को चुनें और उसके पड़ोसी को हिलाएं
+                const emptyIndices = [];
+                currentOrder.forEach((val, idx) => {
+                    if (val === "") emptyIndices.push(idx);
+                });
                 
-                if (row > 0) validMoves.push(emptyIndex - gridSize);
-                if (row < gridSize - 1) validMoves.push(emptyIndex + gridSize);
-                if (col > 0) validMoves.push(emptyIndex - 1);
-                if (col < gridSize - 1) validMoves.push(emptyIndex + 1);
+                const randomEmptyIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+                const validMoves = [];
+                const row = Math.floor(randomEmptyIndex / gridSize);
+                const col = randomEmptyIndex % gridSize;
+                
+                if (row > 0) validMoves.push(randomEmptyIndex - gridSize);
+                if (row < gridSize - 1) validMoves.push(randomEmptyIndex + gridSize);
+                if (col > 0) validMoves.push(randomEmptyIndex - 1);
+                if (col < gridSize - 1) validMoves.push(randomEmptyIndex + 1);
                 
                 const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-                currentOrder[emptyIndex] = currentOrder[randomMove];
+                
+                // आपस में अदला-बदली करें
+                currentOrder[randomEmptyIndex] = currentOrder[randomMove];
                 currentOrder[randomMove] = "";
             }
             if (isAlreadyWon()) { shufflePuzzle(); }
@@ -200,45 +222,56 @@
             startLevel();
         }
 
+        // किसी भी पास वाले खाली डिब्बे में गोटी भेजने का लॉजिक
         function tryMoveTile(index) {
-            const emptyIndex = currentOrder.indexOf("");
             const row = Math.floor(index / gridSize);
             const col = index % gridSize;
-            const emptyRow = Math.floor(emptyIndex / gridSize);
-            const emptyCol = emptyIndex % gridSize;
+            
+            // ढूंढें कि क्या इसके आस-पास कोई खाली जगह है
+            const neighbors = [
+                { idx: index - gridSize, r: row - 1, c: col }, // ऊपर
+                { idx: index + gridSize, r: row + 1, c: col }, // नीचे
+                { idx: index - 1, r: row, c: col - 1 },        // बाएँ
+                { idx: index + 1, r: row, c: col + 1 }         // दाएँ
+            ];
 
-            if ((Math.abs(row - emptyRow) + Math.abs(col - emptyCol)) === 1) {
-                currentOrder[emptyIndex] = currentOrder[index];
-                currentOrder[index] = "";
-                renderGrid();
-                checkWin();
-                return true;
+            for (let neighbor of neighbors) {
+                if (neighbor.r >= 0 && neighbor.r < gridSize && neighbor.c >= 0 && neighbor.c < gridSize) {
+                    if (currentOrder[neighbor.idx] === "") {
+                        // खाली जगह मिलते ही वहाँ गोटी भेज दें
+                        currentOrder[neighbor.idx] = currentOrder[index];
+                        currentOrder[index] = "";
+                        renderGrid();
+                        checkWin();
+                        return true;
+                    }
+                }
             }
             return false;
         }
 
+        // स्वाइप कंट्रोल लॉजिक
         function handleTileSwipe(index, diffX, diffY) {
-            const emptyIndex = currentOrder.indexOf("");
             const row = Math.floor(index / gridSize);
             const col = index % gridSize;
-            const emptyRow = Math.floor(emptyIndex / gridSize);
-            const emptyCol = emptyIndex % gridSize;
 
-            // संवेदनशीलता (Threshold): उंगली कम से कम 20 पिक्सेल हिलनी चाहिए
             if (Math.max(Math.abs(diffX), Math.abs(diffY)) < 20) return; 
 
+            let targetIdx = -1;
+
             if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 0 && emptyCol === col + 1 && emptyRow === row) {
-                    tryMoveTile(index);
-                } else if (diffX < 0 && emptyCol === col - 1 && emptyRow === row) {
-                    tryMoveTile(index);
-                }
+                if (diffX > 0 && col < gridSize - 1) targetIdx = index + 1; // Right
+                else if (diffX < 0 && col > 0) targetIdx = index - 1; // Left
             } else {
-                if (diffY > 0 && emptyRow === row + 1 && emptyCol === col) {
-                    tryMoveTile(index);
-                } else if (diffY < 0 && emptyRow === row - 1 && emptyCol === col) {
-                    tryMoveTile(index);
-                }
+                if (diffY > 0 && row < gridSize - 1) targetIdx = index + gridSize; // Down
+                else if (diffY < 0 && row > 0) targetIdx = index - gridSize; // Up
+            }
+
+            if (targetIdx !== -1 && currentOrder[targetIdx] === "") {
+                currentOrder[targetIdx] = currentOrder[index];
+                currentOrder[index] = "";
+                renderGrid();
+                checkWin();
             }
         }
 
@@ -253,11 +286,11 @@
                     tile.className = "tile";
                     
                     let tileRow = Math.floor((value - 1) / gridSize);
-                    if (tileRow === 0) tile.classList.add("color-row-1");
-                    else if (tileRow === 1) tile.classList.add("color-row-2");
-                    else if (tileRow === 2) tile.classList.add("color-row-3");
-                    else if (tileRow === 3) tile.classList.add("color-row-4");
-                    else tile.classList.add("color-row-rest");
+                    if (tileRow === 0) tile.className = "tile color-row-1";
+                    else if (tileRow === 1) tile.className = "tile color-row-2";
+                    else if (tileRow === 2) tile.className = "tile color-row-3";
+                    else if (tileRow === 3) tile.className = "tile color-row-4";
+                    else tile.className = "tile color-row-rest";
 
                     const numSpan = document.createElement('span');
                     numSpan.className = "tile-num";
@@ -270,326 +303,6 @@
                     tile.appendChild(numSpan);
                     tile.appendChild(textSpan);
                     
-                    // सुपर-स्मूथ पॉइंटर इवेंट्स जो लैग नहीं होने देते
-                    tile.addEventListener('pointerdown', e => {
-                        tile.setPointerCapture(e.pointerId);
-                        startX = e.clientX;
-                        startY = e.clientY;
-                        isPointerDown = true;
-                    });
-
-                    tile.addEventListener('pointerup', e => {
-                        if (!isPointerDown) return;
-                        isPointerDown = false;
-                        tile.releasePointerCapture(e.pointerId);
-
-                        const diffX = e.clientX - startX;
-                        const diffY = e.clientY - startY;
-
-                        if (Math.max(Math.abs(diffX), Math.abs(diffY)) < 5) {
-                            tryMoveTile(index);
-                        } else {
-                            handleTileSwipe(index, diffX, diffY);
-                        }
-                    });
-
-                    tile.addEventListener('pointercancel', e => {
-                        isPointerDown = false;
-                        tile.releasePointerCapture(e.pointerId);
-                    });
-                }
-                gridElement.appendChild(tile);
-            });
-        }
-
-        function checkWin() {
-            if (isAlreadyWon()) {
-                setTimeout(() => {
-                    alert(`शानदार! लेवल ${currentLevel} क्लियर हुआ। अब अगला कठिन स्टेप शुरू होगा! 🎉`);
-                    currentLevel++;
-                    startLevel();
-                }, 200);
-            }
-        }
-
-        function isAlreadyWon() {
-            return currentOrder.every((val, index) => val === winningOrder[index]);
-        }
-
-        document.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-        startLevel();
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Super Smooth Sliding Puzzle</title>
-    <style>
-        body {
-            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background-color: #f7f9fa;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-            /* मोबाइल के डिफ़ॉल्ट स्क्रॉल, ज़ूम और बाउंस इफेक्ट को पूरी तरह बंद करने के लिए */
-            touch-action: none; 
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            overflow: hidden;
-        }
-
-        #game-info {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 20px;
-            background: #fff;
-            padding: 8px 24px;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-
-        #puzzle-container {
-            background-color: #fcfbfa;
-            padding: 15px;
-            border-radius: 24px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.06);
-            width: 90vw;
-            max-width: 360px;
-            height: 90vw;
-            max-height: 360px;
-            box-sizing: border-box;
-            border: 4px solid #f0edf0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #grid {
-            display: grid;
-            gap: 10px;
-            width: 100%;
-            height: 100%;
-        }
-
-        .tile {
-            color: #111111;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 14px;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 3px 0 rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.04);
-            transition: transform 0.05s;
-            box-sizing: border-box;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            container-type: inline-size; 
-            /* ब्राउज़र को बताएं कि इस टाइल पर कोई डिफ़ॉल्ट एक्शन नहीं करना है */
-            touch-action: none; 
-        }
-
-        .tile:active {
-            transform: scale(0.96);
-        }
-
-        .tile-num {
-            font-weight: 700;
-            line-height: 1;
-            font-size: 35cqw;
-        }
-
-        .tile-text {
-            font-weight: 500;
-            color: #444444;
-            margin-top: 4px;
-            white-space: nowrap;
-            font-size: 12cqw;
-        }
-
-        .color-row-1 { background-color: #fcd7e6; }
-        .color-row-2 { background-color: #e0f2fe; }
-        .color-row-3 { background-color: #e0e7ff; }
-        .color-row-4 { background-color: #fef3c7; }
-        .color-row-rest { background-color: #dcfce7; }
-
-        .empty {
-            background-color: #f3f4f6;
-            box-shadow: inset 0 4px 8px rgba(0,0,0,0.04);
-            border-radius: 14px;
-            cursor: default;
-        }
-
-        #restart-btn {
-            margin-top: 25px;
-            padding: 12px 32px;
-            font-size: 15px;
-            font-weight: bold;
-            background-color: #111111;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-    </style>
-</head>
-<body>
-
-
-    <script>
-        const gridElement = document.getElementById('grid');
-        const levelDisplay = document.getElementById('level-val');
-        const gridDesc = document.getElementById('grid-desc');
-        
-        let currentLevel = 1; 
-        let gridSize = 2; 
-        let winningOrder = [];
-        let currentOrder = [];
-
-        const numberWords = {
-            1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
-            6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
-            11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen"
-        };
-
-        // पॉइंटर पोजीशन ट्रैक करने के लिए वेरिएबल्स
-        let startX = 0;
-        let startY = 0;
-        let isPointerDown = false;
-
-        function startLevel() {
-            gridSize = currentLevel + 1; 
-            levelDisplay.innerText = currentLevel;
-            gridDesc.innerText = `${gridSize}x${gridSize}`;
-
-            gridElement.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-            gridElement.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
-
-            let totalTiles = gridSize * gridSize;
-            winningOrder = [];
-            
-            for (let i = 1; i < totalTiles; i++) {
-                winningOrder.push(i);
-            }
-            winningOrder.push(""); 
-
-            currentOrder = [...winningOrder];
-            shufflePuzzle();
-            renderGrid();
-        }
-
-        function shufflePuzzle() {
-            let shuffles = gridSize * gridSize * 25;
-            for (let i = 0; i < shuffles; i++) {
-                const emptyIndex = currentOrder.indexOf("");
-                const validMoves = [];
-                const row = Math.floor(emptyIndex / gridSize);
-                const col = emptyIndex % gridSize;
-                
-                if (row > 0) validMoves.push(emptyIndex - gridSize);
-                if (row < gridSize - 1) validMoves.push(emptyIndex + gridSize);
-                if (col > 0) validMoves.push(emptyIndex - 1);
-                if (col < gridSize - 1) validMoves.push(emptyIndex + 1);
-                
-                const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-                currentOrder[emptyIndex] = currentOrder[randomMove];
-                currentOrder[randomMove] = "";
-            }
-            if (isAlreadyWon()) { shufflePuzzle(); }
-        }
-
-        function resetGame() {
-            currentLevel = 1;
-            startLevel();
-        }
-
-        function tryMoveTile(index) {
-            const emptyIndex = currentOrder.indexOf("");
-            const row = Math.floor(index / gridSize);
-            const col = index % gridSize;
-            const emptyRow = Math.floor(emptyIndex / gridSize);
-            const emptyCol = emptyIndex % gridSize;
-
-            if ((Math.abs(row - emptyRow) + Math.abs(col - emptyCol)) === 1) {
-                currentOrder[emptyIndex] = currentOrder[index];
-                currentOrder[index] = "";
-                renderGrid();
-                checkWin();
-                return true;
-            }
-            return false;
-        }
-
-        function handleTileSwipe(index, diffX, diffY) {
-            const emptyIndex = currentOrder.indexOf("");
-            const row = Math.floor(index / gridSize);
-            const col = index % gridSize;
-            const emptyRow = Math.floor(emptyIndex / gridSize);
-            const emptyCol = emptyIndex % gridSize;
-
-            // संवेदनशीलता (Threshold): उंगली कम से कम 20 पिक्सेल हिलनी चाहिए
-            if (Math.max(Math.abs(diffX), Math.abs(diffY)) < 20) return; 
-
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 0 && emptyCol === col + 1 && emptyRow === row) {
-                    tryMoveTile(index);
-                } else if (diffX < 0 && emptyCol === col - 1 && emptyRow === row) {
-                    tryMoveTile(index);
-                }
-            } else {
-                if (diffY > 0 && emptyRow === row + 1 && emptyCol === col) {
-                    tryMoveTile(index);
-                } else if (diffY < 0 && emptyRow === row - 1 && emptyCol === col) {
-                    tryMoveTile(index);
-                }
-            }
-        }
-
-        function renderGrid() {
-            gridElement.innerHTML = "";
-
-            currentOrder.forEach((value, index) => {
-                const tile = document.createElement('div');
-                if (value === "") {
-                    tile.className = "tile empty";
-                } else {
-                    tile.className = "tile";
-                    
-                    let tileRow = Math.floor((value - 1) / gridSize);
-                    if (tileRow === 0) tile.classList.add("color-row-1");
-                    else if (tileRow === 1) tile.classList.add("color-row-2");
-                    else if (tileRow === 2) tile.classList.add("color-row-3");
-                    else if (tileRow === 3) tile.classList.add("color-row-4");
-                    else tile.classList.add("color-row-rest");
-
-                    const numSpan = document.createElement('span');
-                    numSpan.className = "tile-num";
-                    numSpan.innerText = value;
-
-                    const textSpan = document.createElement('span');
-                    textSpan.className = "tile-text";
-                    textSpan.innerText = numberWords[value] || ("n-" + value);
-
-                    tile.appendChild(numSpan);
-                    tile.appendChild(textSpan);
-                    
-                    // सुपर-स्मूथ पॉइंटर इवेंट्स जो लैग नहीं होने देते
                     tile.addEventListener('pointerdown', e => {
                         tile.setPointerCapture(e.pointerId);
                         startX = e.clientX;
