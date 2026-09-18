@@ -143,7 +143,6 @@
         </div>
     </div>
 
-    
     <div id="puzzle-container">
         <div id="grid"></div>
     </div>
@@ -166,7 +165,6 @@ let moves = 0;
 const movesDisplay = document.getElementById('moves-val');
 const bestDisplay = document.getElementById('best-val');
 const bestNameDisplay = document.getElementById('best-name-box');
-
 
         const numberWords = {
             1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
@@ -191,10 +189,7 @@ const bestNameDisplay = document.getElementById('best-name-box');
 
         function startLevel() {
             gridSize = currentLevel + 1; 
-            
-            // आपके नियम के अनुसार खाली बॉक्स सेट करना:
-            // लेवल 1 (2x2) = 1 खाली, लेवल 2 (3x3) = 1 खाली
-            // लेवल 3 (4x4) = 2 खाली, लेवल 4 (5x5) = 3 खाली, इत्यादि...
+
             if (currentLevel >= 3) {
                 emptyCount = currentLevel - 1;
             } else {
@@ -211,11 +206,11 @@ const bestNameDisplay = document.getElementById('best-name-box');
             let totalNumbers = totalSlots - emptyCount;
             
             winningOrder = [];
-            // पहले नंबर भरें
+      
             for (let i = 1; i <= totalNumbers; i++) {
                 winningOrder.push(i);
             }
-            // फिर जितने चाहिए उतने खाली स्लॉट ("") जोड़ें
+
             for (let i = 0; i < emptyCount; i++) {
                 winningOrder.push("");
             }
@@ -236,7 +231,7 @@ const bestNameDisplay = document.getElementById('best-name-box');
                 const randomEmptyIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
                 const validMoves = [];
                 const row = Math.floor(randomEmptyIndex / gridSize);
-                const col = randomEmptyIndex % gridSize; // यहाँ टाइपो ठीक कर दिया गया है
+                const col = randomEmptyIndex % gridSize;
                 
                 if (row > 0) validMoves.push(randomEmptyIndex - gridSize);
                 if (row < gridSize - 1) validMoves.push(randomEmptyIndex + gridSize);
@@ -251,14 +246,10 @@ const bestNameDisplay = document.getElementById('best-name-box');
             if (isAlreadyWon()) { shufflePuzzle(); }
         }
 
-
         function resetGame() {
             currentLevel = 1;
             startLevel();
         }
-
-        // किसी भी पास वाले खाली डिब्बे में गोटी भेजने का लॉजिक
-        // गोटियों को नॉर्मल हिलाने का लॉजिक
         function tryMoveTile(index) {
             if (currentOrder[index] !== "") {
                 const row = Math.floor(index / gridSize);
@@ -289,12 +280,9 @@ const bestNameDisplay = document.getElementById('best-name-box');
             return false;
         }
 
-        // 100% फिक्स किया हुआ फंक्शन: जब यूज़र सीधे खाली डिब्बे पर क्लिक करे
         function moveTileToSelectedEmpty(emptyIndex) {
             const emptyRow = Math.floor(emptyIndex / gridSize);
             const emptyCol = emptyIndex % gridSize;
-
-            // खाली डिब्बे के आस-पास की गोटियाँ देखें
             const neighbors = [
                 { idx: emptyIndex - gridSize, r: emptyRow - 1, c: emptyCol }, // ऊपर की गोटी
                 { idx: emptyIndex + gridSize, r: emptyRow + 1, c: emptyCol }, // नीचे की गोटी
@@ -306,9 +294,9 @@ const bestNameDisplay = document.getElementById('best-name-box');
                 if (neighbor.r >= 0 && neighbor.r < gridSize && neighbor.c >= 0 && neighbor.c < gridSize) {
                     const tileValue = currentOrder[neighbor.idx];
                     
-                    // अगर पड़ोसी कोई गोटी है और उसके पास 1 से ज़्यादा खाली जगह के विकल्प हैं
+                   
                     if (tileValue !== "" && countEmptyNeighbors(neighbor.idx) > 1) {
-                        // गोटी को सीधे यूज़र के चुने हुए खाली डिब्बे में ट्रांसफर कर दें
+                      
                         currentOrder[emptyIndex] = tileValue;
                         currentOrder[neighbor.idx] = "";
                         renderGrid();
@@ -336,28 +324,24 @@ const bestNameDisplay = document.getElementById('best-name-box');
             }
             return count;
         }
-
-
-        // स्वाइप कंट्रोल लॉजिक
-        // 100% फिक्स किया हुआ स्वाइप लॉजिक (सटीक दिशा जांच के साथ)
         function handleTileSwipe(index, diffX, diffY) {
             const row = Math.floor(index / gridSize);
             const col = index % gridSize;
 
-            // संवेदनशीलता (Threshold): उंगली कम से कम 20 पिक्सेल हिलनी चाहिए
+            
             if (Math.max(Math.abs(diffX), Math.abs(diffY)) < 20) return; 
 
             let targetIdx = -1;
 
             if (Math.abs(diffX) > Math.abs(diffY)) {
-                // हॉरिजॉन्टल स्वाइप (बाएँ या दाएँ)
+                
                 if (diffX > 0 && col < gridSize - 1) {
                     targetIdx = index + 1; // Right Swipe: ठीक दाईं तरफ वाली जगह
                 } else if (diffX < 0 && col > 0) {
                     targetIdx = index - 1; // Left Swipe: ठीक बाईं तरफ वाली जगह
                 }
             } else {
-                // वर्टिकल स्वाइप (ऊपर या नीचे)
+               
                 if (diffY > 0 && row < gridSize - 1) {
                     targetIdx = index + gridSize; // Down Swipe: ठीक नीचे वाली जगह
                 } else if (diffY < 0 && row > 0) {
@@ -365,8 +349,6 @@ const bestNameDisplay = document.getElementById('best-name-box');
                 }
             }
 
-            // सबसे ज़रूरी चेक: टाइल केवल तभी मूव होगी जब आपकी उंगली की दिशा वाले 
-            // ठीक बगल के डिब्बे में सचमुच खाली जगह ("") होगी।
             if (targetIdx !== -1 && currentOrder[targetIdx] === "") {
                 currentOrder[targetIdx] = currentOrder[index];
                 currentOrder[index] = "";
@@ -377,12 +359,10 @@ const bestNameDisplay = document.getElementById('best-name-box');
                 checkWin();
             }
         }
-
-
         function renderGrid() {
             gridElement.innerHTML = "";
 			
-			            // स्क्रीन पर पुराना सेव किया हुआ नाम और बेस्ट स्कोर रेंडर करना
+			          
             let savedBest = localStorage.getItem(`best_level_${currentLevel}`);
             let savedName = localStorage.getItem(`best_name_level_${currentLevel}`);
             if (savedBest) {
@@ -392,7 +372,6 @@ const bestNameDisplay = document.getElementById('best-name-box');
                 if(bestDisplay) bestDisplay.innerText = "-";
                 if(bestNameDisplay) bestNameDisplay.innerText = "";
             }
-
 
             currentOrder.forEach((value, index) => {
                 const tile = document.createElement('div');
@@ -455,18 +434,14 @@ const bestNameDisplay = document.getElementById('best-name-box');
                 setTimeout(() => {
                     let savedBest = localStorage.getItem(`best_level_${currentLevel}`);
                     
-                    // अगर पहली बार जीते हैं या मौजूदा मूव्स पुराने बेस्ट स्कोर से कम हैं
                     if (!savedBest || moves < parseInt(savedBest)) {
                         
-                        // प्लेयर से उसका नाम पूछने के लिए पॉप-अप बॉक्स (Prompt)
                         let playerName = prompt(`🎉 बधाई हो! आपने लेवल ${currentLevel} में नया रिकॉर्ड बनाया है!\nअपना नाम यहाँ दर्ज करें:`, "Player");
                         
-                        // अगर प्लेयर नाम खाली छोड़ दे या कैंसिल कर दे
                         if (!playerName || playerName.trim() === "") {
                             playerName = "Anonymous";
                         }
                         
-                        // लोकल मेमोरी (localStorage) में स्कोर और नाम हमेशा के लिए सेव करना
                         localStorage.setItem(`best_level_${currentLevel}`, moves);
                         localStorage.setItem(`best_name_level_${currentLevel}`, playerName.trim());
 						
@@ -483,7 +458,6 @@ const bestNameDisplay = document.getElementById('best-name-box');
                 }, 200);
             }
         }
-
 
         function isAlreadyWon() {
             return currentOrder.every((val, index) => val === winningOrder[index]);
